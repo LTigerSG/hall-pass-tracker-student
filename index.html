@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hall Pass Student App</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    select, button { font-size: 20px; padding: 10px; margin: 20px; }
+    #timer { font-size: 50px; margin: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Hall Pass Tracker 3.0</h1>
+
+  <div id="reasonDiv">
+    <label for="reason">Select Reason:</label><br>
+    <select id="reason">
+      <option value="Restroom">Restroom</option>
+      <option value="Locker">Locker</option>
+      <option value="Counselor">Counselor</option>
+    </select><br><br>
+    <button onclick="startPass()">Start Pass</button>
+  </div>
+
+  <div id="timerDiv" style="display:none;">
+    <div id="timer">00:00</div>
+    <button onclick="endPass()">End Pass</button>
+  </div>
+
+  <script>
+    const BASE_API = 'https://script.google.com/macros/s/AKfycbx56otGS9Of4ZXopLP8_TcsKmc7PbCete3iO5cnhfu2iE54zGMMcuj06qkf2qN4hqXYfA/exec';
+
+    let startTime = null;
+    let timerInterval = null;
+
+    async function startPass() {
+      const reason = document.getElementById('reason').value;
+
+      const response = await fetch(`${BASE_API}?page=startPass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason })
+      });
+
+      const result = await response.json();
+
+      if (result.status === "LOCKOUT") {
+        alert("You have exceeded your weekly limit. Ask your teacher for permission.");
+        return;
+      }
+
+      startTime = Date.now();
+      document.getElementById('reasonDiv').style.display = 'none';
+      document.getElementById('timerDiv').style.display = 'block';
+      startTimer();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const seconds = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+      }, 1000);
+    }
+
+    async function endPass() {
+      clearInterval(timerInterval);
+
+      await fetch(`${BASE_API}?page=endPass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      alert("Pass ended. Thank you.");
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>
